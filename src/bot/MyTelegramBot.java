@@ -1,0 +1,56 @@
+package bot;
+
+import database.DatabaseManager;
+import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+
+
+public class MyTelegramBot implements LongPollingSingleThreadUpdateConsumer {
+    private final TelegramClient telegramClient = new OkHttpTelegramClient("7749437855:AAHq_1omrDXXCmQCgMOb3kY_aD3qbBg1waU");
+
+
+    @Override
+    public void consume(Update update) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            String messageText = update.getMessage().getText();
+            long userId = update.getMessage().getChatId();
+            String username = update.getMessage().getChat().getUserName();
+
+            //System.out.println(update.getMessage().getText());
+
+            if (messageText.startsWith("/start")) {
+                DatabaseManager.addUser(userId, username);
+
+                try {
+                    telegramClient.execute(new SendMessage(String.valueOf(userId), "Добро пожаловать! Используйте /addtag и /removetag для управления тегами."));
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            } else if (messageText.startsWith("/addtag")) {
+                String tag = messageText.replace("/addtag", "").trim();
+                DatabaseManager.addTagToUser(userId, tag);
+
+                SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Тег \"" + tag + "\" добавлен.");
+                try {
+                    telegramClient.execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+
+            } else if (messageText.startsWith("/removetag")) {
+                String tag = messageText.replace("/removetag", "").trim();
+                DatabaseManager.removeTagFromUser(userId, tag);
+                SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Тег \"" + tag + "\" удалён.");
+                try {
+                    telegramClient.execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
