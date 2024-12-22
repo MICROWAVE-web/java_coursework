@@ -1,6 +1,7 @@
 package bot;
 
 import database.DatabaseManager;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -10,7 +11,10 @@ import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 
 
 public class MyTelegramBot implements LongPollingSingleThreadUpdateConsumer {
-    private final TelegramClient telegramClient = new OkHttpTelegramClient("7749437855:AAHq_1omrDXXCmQCgMOb3kY_aD3qbBg1waU");
+
+    // Загружаем .env
+    Dotenv dotenv = Dotenv.load();
+    private final TelegramClient telegramClient = new OkHttpTelegramClient(dotenv.get("BOT_TOKEN"));
 
 
     @Override

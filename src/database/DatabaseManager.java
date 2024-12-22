@@ -1,12 +1,15 @@
 package database;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import model.Order;
 
 import java.sql.*;
 import java.util.*;
 
 public class DatabaseManager {
-    private static final String DB_URL = "jdbc:sqlite:freelance_bot.db";
+    // Загружаем .env
+    static Dotenv dotenv = Dotenv.load();
+    private static final String DB_URL = dotenv.get("DATABASE_URL");
 
     public static void initDatabase() {
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -32,9 +35,32 @@ public class DatabaseManager {
     }
 
     public static boolean saveOrder(Order order) {
-        // Реализация сохранения заказа
-        return false;
+        String insertOrderQuery = "INSERT INTO orders (task_id, title, payment, description, direct_url) VALUES (?, ?, ?, ?, ?)";
+        try (Connection connection = DriverManager.getConnection(DB_URL);
+             PreparedStatement preparedStatement = connection.prepareStatement(insertOrderQuery)) {
+
+            // Устанавливаем параметры
+            preparedStatement.setString(1, order.getTaskId());
+            preparedStatement.setString(2, order.getTitle());
+            preparedStatement.setString(3, order.getPayment());
+            preparedStatement.setString(4, order.getDescription());
+            preparedStatement.setString(5, order.getDirectUrl());
+
+            // Выполняем запрос
+            preparedStatement.executeUpdate();
+            return true;
+
+        } catch (SQLException e) {
+            // Обработка исключения при нарушении PRIMARY KEY
+            if (e.getMessage().contains("PRIMARY KEY constraint failed")) {
+                System.out.println("Заказ с task_id = " + order.getTaskId() + " уже существует в базе данных. Пропускаем запись.");
+            } else {
+                e.printStackTrace(); // Лог остальных ошибок
+            }
+            return false;
+        }
     }
+
 
     public static Map<String, List<Long>> getTagToUsersMapping() {
         // Реализация получения тегов и пользователей
