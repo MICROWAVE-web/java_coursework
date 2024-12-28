@@ -153,4 +153,21 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
+
+    public static String getUserTags(long userId) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            // Получаем текущие теги пользователя
+            PreparedStatement selectStmt = conn.prepareStatement("SELECT tags FROM users WHERE user_id = ?");
+            selectStmt.setLong(1, userId);
+            ResultSet rs = selectStmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("tags").substring(1).replace(",", ", ");
+            }
+            return "";
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 }

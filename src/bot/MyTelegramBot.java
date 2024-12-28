@@ -66,6 +66,15 @@ public class MyTelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
+            } else if (messageText.startsWith("/tags")) {
+                String tags = DatabaseManager.getUserTags(userId);
+                SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Ваши теги: " + tags);
+                try {
+                    telegramClient.execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+
             }
         }
     }
