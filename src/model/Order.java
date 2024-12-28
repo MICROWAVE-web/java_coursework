@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class Order {
-    private String taskId;
-    private String title;
-    private String payment;
-    private String description;
-    private String directUrl;
+    private final String taskId;
+    private final String title;
+    private final String payment;
+    private final String description;
+    private final String directUrl;
 
     public Order(String taskId, String title, String payment, String description, String directUrl) {
         this.taskId = taskId;
@@ -37,27 +37,6 @@ public class Order {
 
     public String getDirectUrl() {
         return directUrl;
-    }
-
-    // Сеттеры
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setPayment(String payment) {
-        this.payment = payment;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setDirectUrl(String directUrl) {
-        this.directUrl = directUrl;
     }
 
     // Метод вывода заказа в консоль

@@ -36,13 +36,25 @@ public class MyTelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 }
             } else if (messageText.startsWith("/addtag")) {
                 String tag = messageText.replace("/addtag", "").trim();
-                DatabaseManager.addTagToUser(userId, tag);
+                if (tag.length() != 0) {
+                    DatabaseManager.addTagToUser(userId, tag);
+                    SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Тег \"" + tag + "\" добавлен.");
 
-                SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Тег \"" + tag + "\" добавлен.");
-                try {
-                    telegramClient.execute(sendMessage);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
+                    try {
+                        telegramClient.execute(sendMessage);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
+
+                } else {
+                    SendMessage sendMessage = new SendMessage(String.valueOf(userId), "Пустой тег. Попробуйте ещё раз");
+
+                    try {
+                        telegramClient.execute(sendMessage);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
+
                 }
 
             } else if (messageText.startsWith("/removetag")) {

@@ -10,6 +10,7 @@ public class DatabaseManager {
     // Загружаем .env
     static Dotenv dotenv = Dotenv.load();
     private static final String DB_URL = dotenv.get("DATABASE_URL");
+    static int consoleLog = Integer.parseInt(dotenv.get("CONSOLE_LOG"));
 
     public static void initDatabase() {
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -53,7 +54,9 @@ public class DatabaseManager {
         } catch (SQLException e) {
             // Обработка исключения при нарушении PRIMARY KEY
             if (e.getMessage().contains("PRIMARY KEY constraint failed")) {
-                System.out.println("Заказ с task_id = " + order.getTaskId() + " уже существует в базе данных. Пропускаем запись.");
+                if ((consoleLog == 1)) {
+                    System.out.println("Заказ с task_id = " + order.getTaskId() + " уже существует в базе данных. Пропускаем запись.");
+                }
             } else {
                 e.printStackTrace(); // Лог остальных ошибок
             }
@@ -61,15 +64,93 @@ public class DatabaseManager {
         }
     }
 
-
     public static Map<String, List<Long>> getTagToUsersMapping() {
-        // Реализация получения тегов и пользователей
-        return null;
+        Map<String, List<Long>> tagToUsers = new HashMap<>();
+
+        String query = "SELECT user_id, tags FROM users";
+
+        try (Connection connection = DriverManager.getConnection(DB_URL);
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                long userId = resultSet.getLong("user_id");
+                String tagsString = resultSet.getString("tags"); // Теги в виде строки, разделенной запятыми
+                System.out.println(tagsString);
+                if (tagsString != null && !tagsString.isEmpty()) {
+                    // Разбиваем строку тегов на массив
+                    String[] tags = tagsString.split(",");
+
+                    for (String tag : tags) {
+                        tag = tag.trim(); // Убираем лишние пробелы
+                        if (tag.length() > 0) {
+                            // Если тега еще нет в словаре, добавляем его
+                            tagToUsers.putIfAbsent(tag, new ArrayList<>());
+
+                            // Добавляем ID пользователя к соответствующему тегу
+                            tagToUsers.get(tag).add(userId);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return tagToUsers;
     }
 
     public static void addTagToUser(long userId, String tag) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            // Получаем текущие теги пользователя
+            PreparedStatement selectStmt = conn.prepareStatement("SELECT tags FROM users WHERE user_id = ?");
+            selectStmt.setLong(1, userId);
+            ResultSet rs = selectStmt.executeQuery();
+
+            if (rs.next()) {
+                String existingTags = rs.getString("tags");
+                Set<String> tagSet = new HashSet<>(Arrays.asList(existingTags.split(",")));
+
+                // Добавляем новый тег
+                if (!tagSet.contains(tag)) {
+                    tagSet.add(tag);
+                    String updatedTags = String.join(",", tagSet);
+
+                    PreparedStatement updateStmt = conn.prepareStatement("UPDATE users SET tags = ? WHERE user_id = ?");
+                    updateStmt.setString(1, updatedTags);
+                    updateStmt.setLong(2, userId);
+                    updateStmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void removeTagFromUser(long userId, String tag) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            // Получаем текущие теги пользователя
+            PreparedStatement selectStmt = conn.prepareStatement("SELECT tags FROM users WHERE user_id = ?");
+            selectStmt.setLong(1, userId);
+            ResultSet rs = selectStmt.executeQuery();
+
+            if (rs.next()) {
+                String existingTags = rs.getString("tags");
+                Set<String> tagSet = new HashSet<>(Arrays.asList(existingTags.split(",")));
+
+                // Удаляем тег
+                if (tagSet.contains(tag)) {
+                    tagSet.remove(tag);
+                    String updatedTags = String.join(",", tagSet);
+
+                    PreparedStatement updateStmt = conn.prepareStatement("UPDATE users SET tags = ? WHERE user_id = ?");
+                    updateStmt.setString(1, updatedTags);
+                    updateStmt.setLong(2, userId);
+                    updateStmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

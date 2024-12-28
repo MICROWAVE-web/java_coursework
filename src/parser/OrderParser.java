@@ -9,6 +9,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -18,8 +22,13 @@ import java.util.List;
 import java.util.Map;
 
 public class OrderParser {
+
+
     // Загружаем .env
     Dotenv dotenv = Dotenv.load();
+
+    // Телеграмм клиент
+    private final TelegramClient telegramClient = new OkHttpTelegramClient(dotenv.get("BOT_TOKEN"));
 
     // Читаем переменные из .env
     int consoleLog = Integer.parseInt(dotenv.get("CONSOLE_LOG"));
@@ -90,14 +99,24 @@ public class OrderParser {
 
     private void notifyUsers(Order order) {
         Map<String, List<Long>> tagToUsers = DatabaseManager.getTagToUsersMapping();
-        if (tagToUsers == null) {
-            return;
-        }
         tagToUsers.forEach((tag, users) -> {
+            if (consoleLog == 1) {
+                System.out.println("tag: " + tag + " users: " + users);
+            }
             if (order.getDescription().contains(tag)) {
                 users.forEach(userId -> {
-                    // Отправка уведомлений
-                    // Реализуйте вызов Telegram API
+                    SendMessage sendMessage = new SendMessage(String.valueOf(userId),
+                            "Новый заказ: " + order.getTitle() + "\n\n" +
+                                    "Описание: " + order.getDescription() + "\n\n" +
+                                    "Платеж: " + order.getPayment().replace("₽", "₽ ") + "\n\n" +
+                                    "Подробнее: " + order.getDirectUrl());
+
+
+                    try {
+                        telegramClient.execute(sendMessage);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
                 });
             }
         });
